@@ -7,15 +7,16 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Parcelable
 import android.provider.MediaStore
+import android.text.Layout
 import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -26,11 +27,13 @@ class MainActivity : AppCompatActivity() {
     val TAG = "MainActivity"
     private lateinit var imageView: ImageView
     private lateinit var textView: TextView
+    private lateinit var layout: ConstraintLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         imageView = findViewById(R.id.imageView)
         textView = findViewById(R.id.text)
+        layout = findViewById(R.id.mainView)
         job = Job()
         uiScope = CoroutineScope(Dispatchers.Default + job)
 
@@ -59,15 +62,27 @@ class MainActivity : AppCompatActivity() {
             intent?.action == Intent.ACTION_SEND -> {
                 if (intent.type?.startsWith("image/") == true) {
                     handleSendImage(intent) // Handle single image being sent
+                } else {
+                    Log.d(TAG, "${intent.type}")
                 }
             }
             intent?.action == Intent.ACTION_SEND_MULTIPLE
-                    && intent.type?.startsWith("image/") == true -> {
+            -> {
+                if (intent.type?.startsWith("image/") == true) {
+                    Log.d(TAG, "Launched coroutine")
+                    handleSendMultipleImages(intent)
 
-                Log.d(TAG, "Launched coroutine")
-                handleSendMultipleImages(intent)
+                } else  {
+                    withContext(Dispatchers.Main){
+                        Snackbar.make(layout.rootView,"video not supported yet !",Snackbar.LENGTH_LONG).show()
+                    }
+                    Log.d(TAG, "${intent.type}")
+                }
+
 
             }
+
+
 
         }
 
@@ -88,8 +103,10 @@ class MainActivity : AppCompatActivity() {
                 time.toString(),
                 "description"
             )
+
             withContext(Dispatchers.Main) {
-            textView.text = " Photo Saved!!"}
+                textView.text = " Photo Saved!!"
+            }
         }
     }
 
