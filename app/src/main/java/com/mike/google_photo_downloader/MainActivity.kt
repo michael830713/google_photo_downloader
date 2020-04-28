@@ -7,14 +7,14 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Parcelable
 import android.provider.MediaStore
-import android.text.Layout
-import android.util.Log
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 
@@ -25,13 +25,16 @@ class MainActivity : AppCompatActivity() {
 
     val MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 0
     val TAG = "MainActivity"
-    private lateinit var imageView: ImageView
     private lateinit var textView: TextView
     private lateinit var layout: ConstraintLayout
+    private lateinit var mAdView: AdView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        imageView = findViewById(R.id.imageView)
+        MobileAds.initialize(this) {}
+        mAdView = findViewById(R.id.adView)
+        val adRequest = AdRequest.Builder().build()
+        mAdView.loadAd(adRequest)
         textView = findViewById(R.id.text)
         layout = findViewById(R.id.mainView)
         job = Job()
@@ -48,42 +51,60 @@ class MainActivity : AppCompatActivity() {
         } else {
 
             uiScope.launch {
-                saveImageToGallery()
-
+                saveImageToGallery(intent)
             }
 
         }
 
     }
 
+    override fun onNewIntent(intent: Intent?) {
 
-    private suspend fun saveImageToGallery() {
-        when {
-            intent?.action == Intent.ACTION_SEND -> {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE
+            )
+        } else {
+
+            uiScope.launch {
+                saveImageToGallery(intent)
+            }
+
+        }
+        super.onNewIntent(intent)
+
+    }
+
+
+    private suspend fun saveImageToGallery(intent: Intent?) {
+        when (intent?.action) {
+            Intent.ACTION_SEND -> {
                 if (intent.type?.startsWith("image/") == true) {
                     handleSendImage(intent) // Handle single image being sent
                 } else {
-                    Log.d(TAG, "${intent.type}")
                 }
             }
-            intent?.action == Intent.ACTION_SEND_MULTIPLE
+            Intent.ACTION_SEND_MULTIPLE
             -> {
                 if (intent.type?.startsWith("image/") == true) {
-                    Log.d(TAG, "Launched coroutine")
                     handleSendMultipleImages(intent)
 
-                } else  {
-                    withContext(Dispatchers.Main){
-                        Snackbar.make(layout.rootView,"video not supported yet !",Snackbar.LENGTH_LONG).show()
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Snackbar.make(
+                            layout.rootView,
+                            "video not supported yet !",
+                            Snackbar.LENGTH_LONG
+                        ).show()
                     }
-                    Log.d(TAG, "${intent.type}")
                 }
 
 
             }
-
-
-
         }
 
     }
@@ -96,7 +117,6 @@ class MainActivity : AppCompatActivity() {
 
             val bitmap =
                 MediaStore.Images.Media.getBitmap(contentResolver, it)
-            Log.d(TAG, bitmap.byteCount.toString())
             MediaStore.Images.Media.insertImage(
                 contentResolver,
                 bitmap,
@@ -112,7 +132,6 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun handleSendMultipleImages(intent: Intent) {
         withContext(Dispatchers.Default) {
-            Log.d(TAG, "handleSendMultipleImages called")
             intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM)?.let { it ->
 
                 it.forEachIndexed { index, element ->
@@ -130,7 +149,6 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
 
-                    Log.d(TAG, "finished")
                     withContext(Dispatchers.Main) {
                         // update UI here
                         textView.text = "${index + 1}/${it.size} saved"
@@ -155,27 +173,15 @@ class MainActivity : AppCompatActivity() {
                 // If request is cancelled, the result arrays are empty.
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     uiScope.launch {
-                        saveImageToGallery()
-
+                        saveImageToGallery(intent)
                     }
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
                 } else {
                     ActivityCompat.requestPermissions(
                         this,
                         arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                         MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE
                     )
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
                 }
-                return
-            }
-
-            // Add other 'when' lines to check for other
-            // permissions this app might request.
-            else -> {
-                // Ignore all other requests.
             }
         }
     }
