@@ -4,9 +4,13 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.opengl.Visibility
 import android.os.Bundle
 import android.os.Parcelable
 import android.provider.MediaStore
+import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -28,11 +32,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textView: TextView
     private lateinit var layout: ConstraintLayout
     private lateinit var mAdView: AdView
+    private lateinit var mDeterminateBar: ProgressBar
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         MobileAds.initialize(this) {}
         mAdView = findViewById(R.id.adView)
+        mDeterminateBar = findViewById(R.id.determinateBar)
         val adRequest = AdRequest.Builder().build()
         mAdView.loadAd(adRequest)
         textView = findViewById(R.id.text)
@@ -152,8 +158,14 @@ class MainActivity : AppCompatActivity() {
                     withContext(Dispatchers.Main) {
                         // update UI here
                         textView.text = "${index + 1}/${it.size} saved"
+                        mDeterminateBar.visibility = View.VISIBLE
+                        mDeterminateBar.progress = ((index + 1).toDouble().div(it.size)*100).toInt()
+                        Log.d(TAG, mDeterminateBar.progress.toString())
 
-                        if (index + 1 == it.size) textView.text = "All Photos Saved!!"
+                        if (index + 1 == it.size) {
+                            textView.text = "All Photos Saved!!"
+                            mDeterminateBar.visibility = View.GONE
+                        }
                     }
 
                 }
