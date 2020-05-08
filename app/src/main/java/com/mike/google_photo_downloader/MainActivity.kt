@@ -20,6 +20,8 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.google.android.material.snackbar.Snackbar
+import com.orhanobut.logger.AndroidLogAdapter
+import com.orhanobut.logger.Logger
 import kotlinx.coroutines.*
 
 
@@ -37,16 +39,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var galleryIntent: Intent
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        Logger.addLogAdapter(AndroidLogAdapter())
+
         MobileAds.initialize(this) {}
         mAdView = findViewById(R.id.adView)
         mDeterminateBar = findViewById(R.id.determinateBar)
         mGFObutton = findViewById(R.id.googlePhotosButton)
         galleryIntent = Intent(Intent.ACTION_VIEW)
         galleryIntent.type = "image/*"
+        Logger.d("ddd")
 
         mGFObutton.setOnClickListener {
+            Logger.d("button clicked")
             val newIntent: Intent? =
                 packageManager.getLaunchIntentForPackage("com.google.android.apps.photos")
             val webIntent = Intent(
