@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">GFO Downloader</string>
     <string name="initial_text">1. open Google Photos \n2. select some photos \n3. press share button \n4. select GFO downloader  </string>
+    <string name="google_photos">google photos</string>
 </resources>
